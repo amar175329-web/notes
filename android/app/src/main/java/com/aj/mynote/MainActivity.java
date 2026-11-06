@@ -55,7 +55,7 @@ public class MainActivity extends BridgeActivity {
         WindowCompat.setDecorFitsSystemWindows(window, false);
 
         int barColor = isDark ? Color.BLACK : Color.WHITE;
-        window.setStatusBarColor(barColor);
+        window.setStatusBarColor(Color.TRANSPARENT);
         window.setNavigationBarColor(Color.TRANSPARENT);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
