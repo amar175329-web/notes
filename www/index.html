@@ -352,7 +352,7 @@ $('#cin').oninput=e=>{e.target.style.height='auto';e.target.style.height=Math.mi
 $('#cin').onkeydown=e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();$('#snd').click()}};
 $('#gate').onkeydown=e=>{if(e.key==='Enter'){const b=$('#gate .btn');b&&b.click()}};
 let hid=0;document.addEventListener('visibilitychange',()=>{if(document.hidden)hid=Date.now();else if(S.appPin&&hid&&Date.now()-hid>60000){gate.ok=false;gate()}});
-(()=>{const s=$('#splash');s.querySelector('img').src=LOGO;setTimeout(()=>s.classList.add('out'),500);setTimeout(()=>s.remove(),900)})();
+(()=>{const s=$('#splash');if(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform()){s.remove()}else{s.querySelector('img').src=LOGO;setTimeout(()=>s.classList.add('out'),500);setTimeout(()=>s.remove(),900)}})();
 gate();
 $('#fp').onchange=e=>{const l=[...e.target.files];e.target.value='';addFiles(l,'img')};$('#fv').onchange=e=>{const l=[...e.target.files];e.target.value='';addFiles(l,'video')};$('#ff').onchange=e=>{const l=[...e.target.files];e.target.value='';addFiles(l)};new MutationObserver(()=>hydrate()).observe($('#app'),{childList:true,subtree:true});hydrate();
 window.addEventListener('storage',e=>{if(e.key!=='notes-v2'||!e.newValue||scr==='editor')return;try{S=JSON.parse(e.newValue);go(scr)}catch(x){}});document.addEventListener('visibilitychange',()=>{if(!document.hidden&&scr!=='editor')go(scr)});
