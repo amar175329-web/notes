@@ -10,6 +10,7 @@ import android.view.WindowManager;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
+import androidx.activity.OnBackPressedCallback;
 import androidx.core.splashscreen.SplashScreen;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
@@ -41,12 +42,31 @@ public class MainActivity extends BridgeActivity {
 
         applyThemeBars(false);
         setupNativeBars();
+        setupBackDispatcher();
     }
 
     @Override
     public void onStart() {
         super.onStart();
         setupNativeBars();
+    }
+
+    private void setupBackDispatcher() {
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                WebView webView = getBridge() != null ? getBridge().getWebView() : null;
+                if (webView != null) {
+                    webView.evaluateJavascript("window.onAndroidBack ? window.onAndroidBack() : false", value -> {
+                        if ("false".equals(value)) {
+                            finish();
+                        }
+                    });
+                } else {
+                    finish();
+                }
+            }
+        });
     }
 
     private void applyThemeBars(final boolean isDark) {
@@ -86,6 +106,11 @@ public class MainActivity extends BridgeActivity {
                 @JavascriptInterface
                 public void setBars(final boolean isDark) {
                     runOnUiThread(() -> applyThemeBars(isDark));
+                }
+
+                @JavascriptInterface
+                public void exitApp() {
+                    runOnUiThread(MainActivity.this::finish);
                 }
             }, "NativeBars");
         }
