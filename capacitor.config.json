@@ -1,0 +1,10 @@
+{
+  "appId": "com.aj.mynote",
+  "appName": "My Note",
+  "webDir": "www",
+  "server": { "androidScheme": "https" },
+  "android": { "allowMixedContent": false },
+  "plugins": {
+    "SplashScreen": { "launchAutoHide": true, "launchShowDuration": 600, "backgroundColor": "#FFFFFF", "androidScaleType": "CENTER_INSIDE" }
+  }
+}

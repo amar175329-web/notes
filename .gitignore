@@ -1,0 +1,10 @@
+node_modules/
+android/app/build/
+android/.gradle/
+*.keystore
+*.jks
+keystore.properties
+.env
+.vercel/
+test-output/
+*.apk
