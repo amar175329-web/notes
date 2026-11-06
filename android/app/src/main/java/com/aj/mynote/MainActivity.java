@@ -2,6 +2,7 @@ package com.aj.mynote;
 
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.view.Window;
@@ -38,19 +39,7 @@ public class MainActivity extends BridgeActivity {
                 .start();
         });
 
-        Window window = getWindow();
-        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-        window.setBackgroundDrawable(new ColorDrawable(Color.WHITE));
-        window.setStatusBarColor(Color.WHITE);
-        window.setNavigationBarColor(Color.WHITE);
-
-        WindowInsetsControllerCompat insetsController =
-            WindowCompat.getInsetsController(window, window.getDecorView());
-        if (insetsController != null) {
-            insetsController.setAppearanceLightStatusBars(true);
-            insetsController.setAppearanceLightNavigationBars(true);
-        }
-
+        applyThemeBars(false);
         setupNativeBars();
     }
 
@@ -60,29 +49,43 @@ public class MainActivity extends BridgeActivity {
         setupNativeBars();
     }
 
+    private void applyThemeBars(final boolean isDark) {
+        Window window = getWindow();
+        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+        WindowCompat.setDecorFitsSystemWindows(window, false);
+
+        int barColor = isDark ? Color.BLACK : Color.WHITE;
+        window.setStatusBarColor(barColor);
+        window.setNavigationBarColor(Color.TRANSPARENT);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            window.setNavigationBarDividerColor(Color.TRANSPARENT);
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.setStatusBarContrastEnforced(false);
+            window.setNavigationBarContrastEnforced(false);
+        }
+
+        window.setBackgroundDrawable(new ColorDrawable(barColor));
+        if (getBridge() != null && getBridge().getWebView() != null) {
+            getBridge().getWebView().setBackgroundColor(barColor);
+        }
+
+        WindowInsetsControllerCompat insets =
+            WindowCompat.getInsetsController(window, window.getDecorView());
+        if (insets != null) {
+            insets.setAppearanceLightStatusBars(!isDark);
+            insets.setAppearanceLightNavigationBars(!isDark);
+        }
+    }
+
     private void setupNativeBars() {
         if (getBridge() != null && getBridge().getWebView() != null) {
             WebView webView = getBridge().getWebView();
             webView.addJavascriptInterface(new Object() {
                 @JavascriptInterface
                 public void setBars(final boolean isDark) {
-                    runOnUiThread(() -> {
-                        Window window = getWindow();
-                        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-                        int barColor = isDark ? Color.BLACK : Color.WHITE;
-                        window.setStatusBarColor(barColor);
-                        window.setNavigationBarColor(barColor);
-                        window.setBackgroundDrawable(new ColorDrawable(barColor));
-                        if (getBridge() != null && getBridge().getWebView() != null) {
-                            getBridge().getWebView().setBackgroundColor(barColor);
-                        }
-                        WindowInsetsControllerCompat insets =
-                            WindowCompat.getInsetsController(window, window.getDecorView());
-                        if (insets != null) {
-                            insets.setAppearanceLightStatusBars(!isDark);
-                            insets.setAppearanceLightNavigationBars(!isDark);
-                        }
-                    });
+                    runOnUiThread(() -> applyThemeBars(isDark));
                 }
             }, "NativeBars");
         }
