@@ -1,6 +1,8 @@
 node_modules/
 android/app/build/
 android/.gradle/
+.gradle/
+local.properties
 *.keystore
 *.jks
 keystore.properties
