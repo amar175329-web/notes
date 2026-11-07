@@ -6,6 +6,7 @@ import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.ActionMode;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,17 +19,39 @@ import android.widget.ImageView;
 import android.widget.PopupWindow;
 import android.widget.TextView;
 import androidx.activity.OnBackPressedCallback;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.splashscreen.SplashScreen;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import com.getcapacitor.BridgeActivity;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 
 public class MainActivity extends BridgeActivity {
+    private static final String TAG = "MYNOTE_ACTION_MODE";
     private boolean isCurrentDark = false;
+
+    private void unsealHiddenApis() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            try {
+                Method forName = Class.class.getDeclaredMethod("forName", String.class);
+                Method getDeclaredMethod = Class.class.getDeclaredMethod("getDeclaredMethod", String.class, Class[].class);
+                Class<?> vmRuntimeClass = (Class<?>) forName.invoke(null, "dalvik.system.VMRuntime");
+                Method getRuntime = (Method) getDeclaredMethod.invoke(vmRuntimeClass, "getRuntime", (Class<?>[]) null);
+                Method setHiddenApiExemptions = (Method) getDeclaredMethod.invoke(vmRuntimeClass, "setHiddenApiExemptions", new Class[]{String[].class});
+                Object vmRuntime = getRuntime.invoke(null);
+                setHiddenApiExemptions.invoke(vmRuntime, new Object[]{new String[]{"L"}});
+                Log.d(TAG, "Hidden API restrictions unsealed successfully");
+            } catch (Throwable t) {
+                Log.w(TAG, "Hidden API unseal failed: " + t.getMessage());
+            }
+        }
+    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        unsealHiddenApis();
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
         SplashScreen splashScreen = SplashScreen.installSplashScreen(this);
         super.onCreate(savedInstanceState);
 
@@ -67,60 +90,64 @@ public class MainActivity extends BridgeActivity {
         styleFloatingActionMode(mode);
     }
 
+    private Object getFieldValue(Object obj, String fieldName) {
+        if (obj == null) return null;
+        Class<?> cls = obj.getClass();
+        while (cls != null) {
+            try {
+                Field f = cls.getDeclaredField(fieldName);
+                f.setAccessible(true);
+                return f.get(obj);
+            } catch (Throwable ignored) {
+                cls = cls.getSuperclass();
+            }
+        }
+        return null;
+    }
+
     private void styleFloatingActionMode(final ActionMode mode) {
         if (mode == null) return;
+        Log.d(TAG, "styleFloatingActionMode called! Mode: " + mode.getClass().getName());
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             try {
-                Field f = mode.getClass().getDeclaredField("mFloatingToolbar");
-                f.setAccessible(true);
-                Object toolbar = f.get(mode);
+                Object toolbar = getFieldValue(mode, "mFloatingToolbar");
+                Log.d(TAG, "toolbar: " + (toolbar != null ? toolbar.getClass().getName() : "null"));
                 if (toolbar != null) {
-                    Field popupField = toolbar.getClass().getDeclaredField("mPopup");
-                    popupField.setAccessible(true);
-                    Object popup = popupField.get(toolbar);
+                    Object popup = getFieldValue(toolbar, "mPopup");
+                    Log.d(TAG, "popup: " + (popup != null ? popup.getClass().getName() : "null"));
                     if (popup != null) {
                         final int bgColor = isCurrentDark ? Color.parseColor("#1C1C1E") : Color.WHITE;
 
                         try {
-                            Field aAbove = popup.getClass().getDeclaredField("mArrowAbove");
-                            aAbove.setAccessible(true);
-                            Drawable dAbove = (Drawable) aAbove.get(popup);
+                            Drawable dAbove = (Drawable) getFieldValue(popup, "mArrowAbove");
                             if (dAbove != null) dAbove.setTint(bgColor);
                         } catch (Throwable ignored) {}
 
                         try {
-                            Field aBelow = popup.getClass().getDeclaredField("mArrowBelow");
-                            aBelow.setAccessible(true);
-                            Drawable dBelow = (Drawable) aBelow.get(popup);
+                            Drawable dBelow = (Drawable) getFieldValue(popup, "mArrowBelow");
                             if (dBelow != null) dBelow.setTint(bgColor);
                         } catch (Throwable ignored) {}
 
                         try {
-                            Field pwField = popup.getClass().getDeclaredField("mPopupWindow");
-                            pwField.setAccessible(true);
-                            PopupWindow pw = (PopupWindow) pwField.get(popup);
+                            PopupWindow pw = (PopupWindow) getFieldValue(popup, "mPopupWindow");
                             if (pw != null) {
                                 pw.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
                             }
                         } catch (Throwable ignored) {}
 
                         try {
-                            Field mpField = popup.getClass().getDeclaredField("mMainPanel");
-                            mpField.setAccessible(true);
-                            View mp = (View) mpField.get(popup);
+                            View mp = (View) getFieldValue(popup, "mMainPanel");
                             if (mp != null) mp.setBackgroundColor(Color.TRANSPARENT);
                         } catch (Throwable ignored) {}
 
                         try {
-                            Field opField = popup.getClass().getDeclaredField("mOverflowPanel");
-                            opField.setAccessible(true);
-                            View op = (View) opField.get(popup);
+                            View op = (View) getFieldValue(popup, "mOverflowPanel");
                             if (op != null) op.setBackgroundColor(Color.TRANSPARENT);
                         } catch (Throwable ignored) {}
 
-                        Field contentField = popup.getClass().getDeclaredField("mContentContainer");
-                        contentField.setAccessible(true);
-                        final ViewGroup container = (ViewGroup) contentField.get(popup);
+                        final ViewGroup container = (ViewGroup) getFieldValue(popup, "mContentContainer");
+                        Log.d(TAG, "container: " + (container != null ? container.getClass().getName() : "null"));
                         if (container != null) {
                             applyFloatingMenuStyles(container);
                             container.post(() -> applyFloatingMenuStyles(container));
@@ -128,17 +155,14 @@ public class MainActivity extends BridgeActivity {
                             container.postDelayed(() -> applyFloatingMenuStyles(container), 150);
                             container.postDelayed(() -> applyFloatingMenuStyles(container), 300);
 
-                            container.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
-                                @Override
-                                public void onLayoutChange(View v, int left, int top, int right, int bottom,
-                                                           int oldLeft, int oldTop, int oldRight, int oldBottom) {
-                                    applyFloatingMenuStyles(container);
-                                }
+                            container.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+                                applyFloatingMenuStyles(container);
                             });
                         }
                     }
                 }
-            } catch (Throwable ignored) {
+            } catch (Throwable t) {
+                Log.e(TAG, "Error in styleFloatingActionMode", t);
             }
         }
     }

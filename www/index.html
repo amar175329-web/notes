@@ -2,7 +2,8 @@
 :root{--bg:#F3F7F6;--sf:#fff;--ink:#14201F;--mut:#62706E;--ln:#E1EAE8;--ac:#0E9F9A;--ac2:#6366F1;--co:#FF7A66;--oa:#fff;--c0:#fff;--c1:#FFF1C9;--c2:#D9F4E8;--c3:#DCE8FF;--c4:#FFE0DA;--c5:#E7E1FB;--due:#FFE6DC;--sh:0 10px 30px rgba(14,60,56,.10)}
 :root[data-t=dark]{--bg:#0C1413;--sf:#142120;--ink:#EAF4F2;--mut:#93A6A3;--ln:#223432;--ac:#35C9C2;--ac2:#8C90FF;--co:#FF8F7D;--oa:#06201F;--c0:#142120;--c1:#3A3320;--c2:#17382E;--c3:#1B2E4D;--c4:#43262B;--c5:#2C2750;--due:#43291F;--sh:0 10px 30px rgba(0,0,0,.4);color-scheme:dark}
 :root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:0px}
-html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}
+input,textarea,[contenteditable="true"],.field,.search,.ttl,#t,#b,#cin,#tx,#dt,#cu,#ct,.cr input,.bub,.cmsg,.code,.selectable,[data-copyable]{-webkit-user-select:text!important;user-select:text!important;-webkit-touch-callout:default!important}
 body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:500 16px/1.45 Manrope,system-ui,sans-serif}
 #app{position:relative;max-width:480px;height:100%;margin:0 auto;overflow:hidden;overflow:clip}
 .scr{position:absolute;inset:0;overflow-y:auto;padding:20px 18px 120px;opacity:0;transform:translateY(10px);pointer-events:none;transition:opacity .22s,transform .22s}.scr.on{opacity:1;transform:none;pointer-events:auto}
@@ -482,6 +483,14 @@ if (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.App) {
         if (!window.onAndroidBack()) Capacitor.Plugins.App.exitApp();
     });
 }
+document.addEventListener('contextmenu', e => {
+    const t = e.target;
+    const tag = t.tagName ? t.tagName.toLowerCase() : '';
+    if (tag === 'textarea' || tag === 'input' || t.isContentEditable || t.closest('.bub, [data-copyable], .code, #b, #t, #cin, #cl, #tx, #dt')) {
+        return;
+    }
+    e.preventDefault();
+}, { passive: false });
 document.addEventListener('backbutton', () => {
     if (!window.onAndroidBack()) {
         if (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.App) Capacitor.Plugins.App.exitApp();
