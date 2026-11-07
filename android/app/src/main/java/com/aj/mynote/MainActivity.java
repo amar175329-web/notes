@@ -1,5 +1,6 @@
 package com.aj.mynote;
 
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
@@ -52,6 +53,7 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         unsealHiddenApis();
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+
         SplashScreen splashScreen = SplashScreen.installSplashScreen(this);
         super.onCreate(savedInstanceState);
 
@@ -85,6 +87,42 @@ public class MainActivity extends BridgeActivity {
     }
 
     @Override
+    public ActionMode onWindowStartingActionMode(ActionMode.Callback callback, int type) {
+        if (type == ActionMode.TYPE_FLOATING) {
+            final ActionMode.Callback orig = callback;
+            callback = new ActionMode.Callback2() {
+                @Override
+                public boolean onCreateActionMode(ActionMode mode, android.view.Menu menu) {
+                    boolean res = orig.onCreateActionMode(mode, menu);
+                    styleFloatingActionMode(mode);
+                    return res;
+                }
+                @Override
+                public boolean onPrepareActionMode(ActionMode mode, android.view.Menu menu) {
+                    boolean res = orig.onPrepareActionMode(mode, menu);
+                    styleFloatingActionMode(mode);
+                    return res;
+                }
+                @Override
+                public boolean onActionItemClicked(ActionMode mode, android.view.MenuItem item) {
+                    return orig.onActionItemClicked(mode, item);
+                }
+                @Override
+                public void onDestroyActionMode(ActionMode mode) {
+                    orig.onDestroyActionMode(mode);
+                }
+                @Override
+                public void onGetContentRect(ActionMode mode, View view, android.graphics.Rect outRect) {
+                    if (orig instanceof ActionMode.Callback2) {
+                        ((ActionMode.Callback2) orig).onGetContentRect(mode, view, outRect);
+                    }
+                }
+            };
+        }
+        return super.onWindowStartingActionMode(callback, type);
+    }
+
+    @Override
     public void onActionModeStarted(ActionMode mode) {
         super.onActionModeStarted(mode);
         styleFloatingActionMode(mode);
@@ -112,10 +150,8 @@ public class MainActivity extends BridgeActivity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             try {
                 Object toolbar = getFieldValue(mode, "mFloatingToolbar");
-                Log.d(TAG, "toolbar: " + (toolbar != null ? toolbar.getClass().getName() : "null"));
                 if (toolbar != null) {
                     Object popup = getFieldValue(toolbar, "mPopup");
-                    Log.d(TAG, "popup: " + (popup != null ? popup.getClass().getName() : "null"));
                     if (popup != null) {
                         final int bgColor = isCurrentDark ? Color.parseColor("#1C1C1E") : Color.WHITE;
 
@@ -147,7 +183,6 @@ public class MainActivity extends BridgeActivity {
                         } catch (Throwable ignored) {}
 
                         final ViewGroup container = (ViewGroup) getFieldValue(popup, "mContentContainer");
-                        Log.d(TAG, "container: " + (container != null ? container.getClass().getName() : "null"));
                         if (container != null) {
                             applyFloatingMenuStyles(container);
                             container.post(() -> applyFloatingMenuStyles(container));
@@ -170,8 +205,8 @@ public class MainActivity extends BridgeActivity {
     private void applyFloatingMenuStyles(final ViewGroup container) {
         if (container == null) return;
         final int bgColor = isCurrentDark ? Color.parseColor("#1C1C1E") : Color.WHITE;
-        final int strokeColor = isCurrentDark ? Color.parseColor("#2C2C2E") : Color.parseColor("#E2E8F0");
-        final int targetTextColor = isCurrentDark ? Color.parseColor("#F5F5F7") : Color.parseColor("#14201F");
+        final int strokeColor = isCurrentDark ? Color.parseColor("#3A3A3C") : Color.parseColor("#E2E8F0");
+        final int targetTextColor = isCurrentDark ? Color.WHITE : Color.parseColor("#14201F");
 
         float density = getResources().getDisplayMetrics().density;
         int cornerRadius = (int) (22 * density);
@@ -228,6 +263,7 @@ public class MainActivity extends BridgeActivity {
 
     private void applyThemeBars(final boolean isDark) {
         isCurrentDark = isDark;
+
         Window window = getWindow();
         window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
         WindowCompat.setDecorFitsSystemWindows(window, false);
