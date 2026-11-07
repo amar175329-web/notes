@@ -1,5 +1,9 @@
 package com.aj.mynote;
 
+import android.Manifest;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
@@ -78,6 +82,35 @@ public class MainActivity extends BridgeActivity {
         applyThemeBars(false);
         setupNativeBars();
         setupBackDispatcher();
+
+        // Enable WebView debugging for remote diagnostics
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            WebView.setWebContentsDebuggingEnabled(true);
+        }
+
+        // Create High-Priority Reminder Notification Channel
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                "reminders",
+                "Reminders",
+                NotificationManager.IMPORTANCE_HIGH
+            );
+            channel.setDescription("My Note reminder notifications");
+            channel.enableLights(true);
+            channel.setLightColor(Color.parseColor("#0E9F9A"));
+            channel.enableVibration(true);
+            NotificationManager manager = getSystemService(NotificationManager.class);
+            if (manager != null) {
+                manager.createNotificationChannel(channel);
+            }
+        }
+
+        // Request Notification Permission on Android 13+ (TIRAMISU)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1001);
+            }
+        }
     }
 
     @Override
