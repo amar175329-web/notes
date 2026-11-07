@@ -28,9 +28,14 @@ import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.splashscreen.SplashScreen;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
+import android.content.Intent;
+import android.speech.RecognizerIntent;
+import android.speech.SpeechRecognizer;
 import com.getcapacitor.BridgeActivity;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import org.json.JSONObject;
 
 public class MainActivity extends BridgeActivity {
     private static final String TAG = "MYNOTE_ACTION_MODE";
@@ -109,6 +114,13 @@ public class MainActivity extends BridgeActivity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1001);
+            }
+        }
+
+        // Request Record Audio Permission
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 1002);
             }
         }
     }
@@ -340,6 +352,58 @@ public class MainActivity extends BridgeActivity {
                     runOnUiThread(MainActivity.this::finish);
                 }
             }, "NativeBars");
+
+            webView.addJavascriptInterface(new Object() {
+                @JavascriptInterface
+                public boolean isAvailable() {
+                    return SpeechRecognizer.isRecognitionAvailable(MainActivity.this);
+                }
+
+                @JavascriptInterface
+                public void startSpeech(final String lang) {
+                    runOnUiThread(() -> {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                                requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 1002);
+                            }
+                        }
+                        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+                        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, (lang != null && !lang.isEmpty()) ? lang : "hi-IN");
+                        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, (lang != null && !lang.isEmpty()) ? lang : "hi-IN");
+                        intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Boliye... (Speak now)");
+                        try {
+                            startActivityForResult(intent, 9001);
+                        } catch (Exception e) {
+                            Log.e(TAG, "Native voice intent failed: " + e.getMessage());
+                            WebView wv = getBridge() != null ? getBridge().getWebView() : null;
+                            if (wv != null) {
+                                wv.post(() -> wv.evaluateJavascript("window.onNativeVoiceEnd && window.onNativeVoiceEnd()", null));
+                            }
+                        }
+                    });
+                }
+            }, "NativeVoice");
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 9001) {
+            WebView webView = getBridge() != null ? getBridge().getWebView() : null;
+            if (webView != null) {
+                if (resultCode == RESULT_OK && data != null) {
+                    ArrayList<String> matches = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+                    if (matches != null && !matches.isEmpty()) {
+                        final String spoken = matches.get(0);
+                        String escaped = JSONObject.quote(spoken);
+                        webView.post(() -> webView.evaluateJavascript("window.onNativeVoiceText && window.onNativeVoiceText(" + escaped + ")", null));
+                        return;
+                    }
+                }
+                webView.post(() -> webView.evaluateJavascript("window.onNativeVoiceEnd && window.onNativeVoiceEnd()", null));
+            }
         }
     }
 }
