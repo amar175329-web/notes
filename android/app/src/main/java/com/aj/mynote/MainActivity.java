@@ -2,6 +2,8 @@ package com.aj.mynote;
 
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.ActionMode;
@@ -13,6 +15,7 @@ import android.view.animation.AccelerateDecelerateInterpolator;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 import android.widget.ImageView;
+import android.widget.PopupWindow;
 import android.widget.TextView;
 import androidx.activity.OnBackPressedCallback;
 import androidx.core.splashscreen.SplashScreen;
@@ -76,13 +79,62 @@ public class MainActivity extends BridgeActivity {
                     popupField.setAccessible(true);
                     Object popup = popupField.get(toolbar);
                     if (popup != null) {
+                        final int bgColor = isCurrentDark ? Color.parseColor("#1C1C1E") : Color.WHITE;
+
+                        try {
+                            Field aAbove = popup.getClass().getDeclaredField("mArrowAbove");
+                            aAbove.setAccessible(true);
+                            Drawable dAbove = (Drawable) aAbove.get(popup);
+                            if (dAbove != null) dAbove.setTint(bgColor);
+                        } catch (Throwable ignored) {}
+
+                        try {
+                            Field aBelow = popup.getClass().getDeclaredField("mArrowBelow");
+                            aBelow.setAccessible(true);
+                            Drawable dBelow = (Drawable) aBelow.get(popup);
+                            if (dBelow != null) dBelow.setTint(bgColor);
+                        } catch (Throwable ignored) {}
+
+                        try {
+                            Field pwField = popup.getClass().getDeclaredField("mPopupWindow");
+                            pwField.setAccessible(true);
+                            PopupWindow pw = (PopupWindow) pwField.get(popup);
+                            if (pw != null) {
+                                pw.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+                            }
+                        } catch (Throwable ignored) {}
+
+                        try {
+                            Field mpField = popup.getClass().getDeclaredField("mMainPanel");
+                            mpField.setAccessible(true);
+                            View mp = (View) mpField.get(popup);
+                            if (mp != null) mp.setBackgroundColor(Color.TRANSPARENT);
+                        } catch (Throwable ignored) {}
+
+                        try {
+                            Field opField = popup.getClass().getDeclaredField("mOverflowPanel");
+                            opField.setAccessible(true);
+                            View op = (View) opField.get(popup);
+                            if (op != null) op.setBackgroundColor(Color.TRANSPARENT);
+                        } catch (Throwable ignored) {}
+
                         Field contentField = popup.getClass().getDeclaredField("mContentContainer");
                         contentField.setAccessible(true);
                         final ViewGroup container = (ViewGroup) contentField.get(popup);
                         if (container != null) {
                             applyFloatingMenuStyles(container);
                             container.post(() -> applyFloatingMenuStyles(container));
-                            container.postDelayed(() -> applyFloatingMenuStyles(container), 80);
+                            container.postDelayed(() -> applyFloatingMenuStyles(container), 50);
+                            container.postDelayed(() -> applyFloatingMenuStyles(container), 150);
+                            container.postDelayed(() -> applyFloatingMenuStyles(container), 300);
+
+                            container.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+                                @Override
+                                public void onLayoutChange(View v, int left, int top, int right, int bottom,
+                                                           int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                                    applyFloatingMenuStyles(container);
+                                }
+                            });
                         }
                     }
                 }
@@ -91,22 +143,43 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
-    private void applyFloatingMenuStyles(ViewGroup group) {
-        if (group == null) return;
-        final int darkColor = Color.parseColor("#14201F");
-        final int lightColor = Color.parseColor("#F5F5F7");
-        final int targetColor = isCurrentDark ? lightColor : darkColor;
+    private void applyFloatingMenuStyles(final ViewGroup container) {
+        if (container == null) return;
+        final int bgColor = isCurrentDark ? Color.parseColor("#1C1C1E") : Color.WHITE;
+        final int strokeColor = isCurrentDark ? Color.parseColor("#2C2C2E") : Color.parseColor("#E2E8F0");
+        final int targetTextColor = isCurrentDark ? Color.parseColor("#F5F5F7") : Color.parseColor("#14201F");
 
+        float density = getResources().getDisplayMetrics().density;
+        int cornerRadius = (int) (22 * density);
+        int strokeWidth = Math.max(1, (int) (1 * density));
+
+        GradientDrawable bgDrawable = new GradientDrawable();
+        bgDrawable.setShape(GradientDrawable.RECTANGLE);
+        bgDrawable.setCornerRadius(cornerRadius);
+        bgDrawable.setColor(bgColor);
+        bgDrawable.setStroke(strokeWidth, strokeColor);
+
+        container.setBackground(bgDrawable);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            container.setElevation(8 * density);
+            container.setClipToOutline(true);
+        }
+
+        styleViewGroupChildren(container, targetTextColor);
+    }
+
+    private void styleViewGroupChildren(ViewGroup group, int textColor) {
         for (int i = 0; i < group.getChildCount(); i++) {
             View child = group.getChildAt(i);
             if (child instanceof TextView) {
                 TextView tv = (TextView) child;
-                tv.setTextColor(targetColor);
+                tv.setTextColor(textColor);
                 tv.setBackgroundColor(Color.TRANSPARENT);
             } else if (child instanceof ImageView) {
-                ((ImageView) child).setColorFilter(targetColor);
+                ((ImageView) child).setColorFilter(textColor);
             } else if (child instanceof ViewGroup) {
-                applyFloatingMenuStyles((ViewGroup) child);
+                child.setBackgroundColor(Color.TRANSPARENT);
+                styleViewGroupChildren((ViewGroup) child, textColor);
             }
         }
     }

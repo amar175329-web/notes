@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!-- Enforce clean white launch and window background even when system dark mode is active -->
     <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="android:isLightTheme">true</item>
         <item name="isLightTheme">true</item>
@@ -17,6 +16,9 @@
         <item name="android:actionModeStyle">@style/AppTheme.ActionMode</item>
         <item name="android:windowBackground">@color/white</item>
         <item name="android:colorBackground">@color/white</item>
+        <item name="android:colorBackgroundFloating">@color/white</item>
+        <item name="colorBackgroundFloating">@color/white</item>
+        <item name="android:popupBackground">@color/white</item>
         <item name="android:statusBarColor">@color/white</item>
         <item name="android:navigationBarColor">@color/white</item>
         <item name="android:windowLightStatusBar">true</item>
@@ -37,6 +39,9 @@
         <item name="android:actionModeStyle">@style/AppTheme.ActionMode</item>
         <item name="android:windowBackground">@color/white</item>
         <item name="android:colorBackground">@color/white</item>
+        <item name="android:colorBackgroundFloating">@color/white</item>
+        <item name="colorBackgroundFloating">@color/white</item>
+        <item name="android:popupBackground">@color/white</item>
         <item name="android:statusBarColor">@color/white</item>
         <item name="android:navigationBarColor">@color/white</item>
         <item name="android:windowLightStatusBar">true</item>

@@ -5,4 +5,8 @@
     <color name="dark_ink">#14201F</color>
     <color name="teal_primary">#0E9F9A</color>
     <color name="text_muted">#62706E</color>
+    <color name="dark_surface">#1C1C1E</color>
+    <color name="light_surface">#FFFFFF</color>
+    <color name="light_border">#E2E8F0</color>
+    <color name="dark_border">#2C2C2E</color>
 </resources>
